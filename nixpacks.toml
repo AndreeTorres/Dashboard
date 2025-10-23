@@ -1,0 +1,19 @@
+# Railway Configuration for Karina's Dashboard
+
+# Build Command
+NIXPACKS_BUILD_CMD=chmod +x railway-setup.sh && ./railway-setup.sh
+
+# PHP Version
+NIXPACKS_PHP_VERSION=8.2
+
+# Node Version  
+NIXPACKS_NODE_VERSION=18
+
+# Install Command Override
+NIXPACKS_INSTALL_CMD=composer install --no-dev --optimize-autoloader && npm ci --only=production
+
+# Build Command Override
+NIXPACKS_BUILD_CMD=npm run build && php artisan optimize
+
+# Start Command
+NIXPACKS_START_CMD=vendor/bin/heroku-php-apache2 public/
