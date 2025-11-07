@@ -61,10 +61,16 @@ RUN php artisan package:discover --ansi \
  && php artisan route:cache \
  && php artisan view:cache || true
 
-# ============================================================
-# ✅ Servidor embebido de PHP (Render/Koyeb/Railway detectan HTTP)
-# ============================================================
+# ===== Servidor embebido + bootstrap en runtime =====
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["sh", "-lc", "php -d variables_order=EGPCS -S 0.0.0.0:${PORT} -t public public/index.php"]
+# Limpia caches y (opcional) corre migraciones al iniciar, luego levanta HTTP
+CMD ["sh", "-lc", "\
+  php artisan config:clear && \
+  php artisan route:clear && \
+  php artisan view:clear && \
+  php artisan optimize:clear && \
+  php artisan storage:link || true && \
+  php -d variables_order=EGPCS -S 0.0.0.0:${PORT} -t public public/index.php \
+"]
