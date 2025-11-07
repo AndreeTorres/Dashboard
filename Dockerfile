@@ -61,8 +61,10 @@ RUN php artisan package:discover --ansi \
  && php artisan route:cache \
  && php artisan view:cache || true
 
-# Exponer el puerto por defecto (Render/Koyeb/Railway usarán su variable $PORT)
-EXPOSE 9000
+# ============================================================
+# ✅ Servidor embebido de PHP (Render/Koyeb/Railway detectan HTTP)
+# ============================================================
+ENV PORT=8080
+EXPOSE 8080
 
-# Comando de inicio
-CMD ["php-fpm"]
+CMD ["sh", "-lc", "php -d variables_order=EGPCS -S 0.0.0.0:${PORT} -t public public/index.php"]
