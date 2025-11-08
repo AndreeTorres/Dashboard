@@ -1,90 +1,64 @@
-# =====================================================
-# 1️⃣ ETAPA DE BUILD (Frontend con Node)
-# =====================================================
+# ============================
+# 1) BUILD de assets (Vite)
+# ============================
 FROM node:18 AS assets
 WORKDIR /app
-
-# Instalar dependencias del frontend
 COPY package*.json ./
 RUN npm ci
-
-# Copiar el resto del proyecto y construir los assets (Vite, Tailwind, etc.)
 COPY . .
 RUN npm run build
 
-
-# =====================================================
-# 2️⃣ ETAPA DE RUNTIME (Backend Laravel + PHP + Composer)
-# =====================================================
+# ============================
+# 2) RUNTIME PHP (Laravel)
+# ============================
 FROM php:8.2-fpm
 
-# Instalar dependencias del sistema y extensiones PHP necesarias (incluye PostgreSQL)
+# Paquetes del sistema + extensiones PHP (incluye PGSQL)
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    zip \
-    unzip \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    libicu-dev \
-    libpq-dev \
+    git curl zip unzip \
+    libpng-dev libonig-dev libxml2-dev libzip-dev libicu-dev libpq-dev \
  && docker-php-ext-configure intl \
  && docker-php-ext-install \
-    pdo_mysql \
-    pdo_pgsql \
-    mbstring \
-    exif \
-    pcntl \
-    bcmath \
-    gd \
-    zip \
-    intl \
+    pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd zip intl \
  && rm -rf /var/lib/apt/lists/*
 
-# Instalar Composer (copiado desde la imagen oficial)
+# Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Directorio de trabajo
 WORKDIR /var/www/html
 
-# Copiar archivos principales para instalar dependencias PHP
+# Instalar vendors SIN scripts (todavía no existe artisan)
 COPY composer.json composer.lock ./
-
-# Configurar Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-
-# Instalar dependencias PHP (sin ejecutar scripts, todavía no existe artisan)
 RUN php -d memory_limit=-1 /usr/bin/composer install \
     --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts
 
-# Copiar el resto del proyecto
+# Copiar código y assets compilados
 COPY . .
-
-# Copiar los assets compilados desde la etapa de Node
 COPY --from=assets /app/public /var/www/html/public
 
-# Crear carpetas necesarias y asignar permisos
+# Permisos
 RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
  && chown -R www-data:www-data /var/www/html \
  && chmod -R 755 storage bootstrap/cache
 
-# =====================================================
-# 🚀 INICIO DEL SERVIDOR PHP EMBEBIDO
-# =====================================================
+# No cacheamos en build (las vars llegan en runtime)
 
-# Exponer el puerto que Render o Railway detectará
+# ===== Servidor embebido + bootstrap en runtime =====
 ENV PORT=8080
 EXPOSE 8080
 
-# Comando de arranque
+# Limpia caches, crea symlink, (opcional) crea tabla de sesiones si la usas,
+# corre migraciones y luego levanta el servidor HTTP embebido.
 CMD ["sh", "-lc", "\
-  echo '🚀 Iniciando Karina Dashboard...' && \
+  echo '🔧 Bootstrap runtime...' && \
   php artisan config:clear && \
   php artisan route:clear && \
   php artisan view:clear && \
   php artisan optimize:clear && \
   php artisan storage:link || true && \
-  php -d variables_order=EGPCS -S 0.0.0.0:${PORT} -t public public/index.php \
+  if [ \"${SESSION_DRIVER}\" = \"database\" ]; then php artisan session:table || true; fi && \
+  php artisan migrate --force --no-interaction || true && \
+  echo '🚀 Iniciando servidor HTTP...' && \
+  php -d variables_order=EGPCS -S 0.0.0.0:${PORT} -t public \
 "]
