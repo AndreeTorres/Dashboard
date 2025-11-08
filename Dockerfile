@@ -51,7 +51,6 @@ EXPOSE 8080
 # Limpia caches, crea symlink, (opcional) crea tabla de sesiones si la usas,
 # corre migraciones y luego levanta el servidor HTTP embebido.
 CMD ["sh", "-lc", "\
-  echo '🔧 Bootstrap runtime...' && \
   php artisan config:clear && \
   php artisan route:clear && \
   php artisan view:clear && \
@@ -59,6 +58,6 @@ CMD ["sh", "-lc", "\
   php artisan storage:link || true && \
   if [ \"${SESSION_DRIVER}\" = \"database\" ]; then php artisan session:table || true; fi && \
   php artisan migrate --force --no-interaction || true && \
-  echo '🚀 Iniciando servidor HTTP...' && \
   php -d variables_order=EGPCS -S 0.0.0.0:${PORT} -t public \
 "]
+
