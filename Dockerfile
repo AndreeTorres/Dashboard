@@ -56,8 +56,7 @@ CMD ["sh", "-lc", "\
   php artisan view:clear && \
   php artisan optimize:clear && \
   php artisan storage:link || true && \
-  if [ \"${SESSION_DRIVER}\" = \"database\" ]; then php artisan session:table || true; fi && \
   php artisan migrate --force --no-interaction || true && \
-  php -d variables_order=EGPCS -S 0.0.0.0:${PORT} -t public \
+  php -d variables_order=EGPCS -S 0.0.0.0:${PORT} -t public server.php \
 "]
 
