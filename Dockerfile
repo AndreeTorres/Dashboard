@@ -27,7 +27,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Vendors SIN scripts (aún no existe artisan)
+# Instalar vendors SIN scripts (aún no existe artisan)
 COPY composer.json composer.lock ./
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN php -d memory_limit=-1 /usr/bin/composer install \
@@ -42,18 +42,14 @@ RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cac
  && chown -R www-data:www-data /var/www/html \
  && chmod -R 755 storage bootstrap/cache
 
-# No cacheamos en build (las envs llegan en runtime)
-
 # ===== Servidor embebido + bootstrap en runtime =====
 ENV PORT=8080
 EXPOSE 8080
 CMD ["sh", "-lc", "\
-  [ -f artisan ] || (echo '❌ artisan not found' && ls -la && exit 1); \
-  php artisan config:clear && \
-  php artisan route:clear && \
-  php artisan view:clear && \
-  php artisan optimize:clear && \
+  [ -f artisan ] || (echo '❌ artisan not found in /var/www/html' && ls -la && exit 1); \
+  php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan optimize:clear && \
   php artisan storage:link || true && \
   php artisan migrate --force --no-interaction || true && \
+  php artisan db:seed --force --no-interaction || true && \
   php -d variables_order=EGPCS -S 0.0.0.0:${PORT} -t public server.php \
 "]
