@@ -48,12 +48,12 @@ RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cac
 ENV PORT=8080
 EXPOSE 8080
 CMD ["sh", "-lc", "\
+  [ -f artisan ] || (echo '❌ artisan not found' && ls -la && exit 1); \
   php artisan config:clear && \
   php artisan route:clear && \
   php artisan view:clear && \
   php artisan optimize:clear && \
   php artisan storage:link || true && \
-  if [ \"${SESSION_DRIVER}\" = \"database\" ]; then php artisan session:table || true; fi && \
   php artisan migrate --force --no-interaction || true && \
   php -d variables_order=EGPCS -S 0.0.0.0:${PORT} -t public server.php \
 "]
