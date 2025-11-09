@@ -37,7 +37,9 @@
 /auth.json
 .phpunit.result.cache
 /.phpunit.cache
-#artisan
+- artisan
++ !artisan
+
 
 # ========================================
 # NODE.JS / NPM / VITE
